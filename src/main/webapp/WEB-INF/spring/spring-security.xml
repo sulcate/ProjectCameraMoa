@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:security="http://www.springframework.org/schema/security"
+	xmlns:mybatis-spring="http://mybatis.org/schema/mybatis-spring"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:sec="http://www.springframework.org/schema/security"
+	xsi:schemaLocation="http://www.springframework.org/schema/security http://www.springframework.org/schema/security/spring-security-5.3.xsd
+		http://mybatis.org/schema/mybatis-spring http://mybatis.org/schema/mybatis-spring-1.2.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.3.xsd">
+
+	<!-- 암호화 처리, 사용자 계정 정보 처리 -->
+	<bean id="bcryptPasswordEncoder"
+		class="org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder" />
+	<bean id="customUserDetailsService"
+		class="kr.icia.security.CustomUserDetailsService" />
+
+
+	<!-- 웹의 URL 접근 -->
+	<security:http use-expressions="true" auto-config="true">
+		<security:csrf disabled="true" />
+
+
+
+		<!-- <security:intercept-url access="hasAnyRole('ROLE_USER','ROLE_ADMIN')" 
+			pattern="/user/**" /> -->
+		<security:intercept-url pattern="/**"
+			access="permitAll" />
+		<security:intercept-url pattern="/admin/**"
+			access="hasRole('ROLE_ADMIN')" />
+
+
+
+		<security:form-login default-target-url="/"
+			login-page="/user/login" login-processing-url="/user/login"
+			password-parameter="userpw" username-parameter="userid" />
+
+		<security:remember-me
+			data-source-ref="dataSource" token-validity-seconds="604800" />
+
+		<security:logout logout-url="/user/logout"
+			invalidate-session="true"
+			logout-success-url="/"
+			delete-cookies="SPRING_SECURITY_REMEMBER_ME_COOKIE,JSESSION_ID" />
+
+		<security:headers>
+			<sec:frame-options disabled="true"></sec:frame-options>
+		</security:headers>
+
+
+	</security:http>
+
+
+	<!-- 시큐리티 관리, 위에서 선언한 빈 사용 -->
+	<security:authentication-manager>
+		<security:authentication-provider
+			user-service-ref="customUserDetailsService">
+			<security:password-encoder
+				ref="bcryptPasswordEncoder" />
+		</security:authentication-provider>
+	</security:authentication-manager>
+
+</beans>

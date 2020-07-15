@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.icia.mapper.InquiryMapper">
+
+	<select id="getList" resultType="kr.icia.domain.InquiryVO">
+<![CDATA[
+select * from tbl_inquiry where ibno > 0
+]]>
+	</select>
+	
+	<select id="getList2" resultType="kr.icia.domain.InquiryVO">
+	select * from tbl_inquiry order by ref desc, lev
+   </select>
+
+	<insert id="insert">
+		insert into tbl_inquiry (ibno,ititle,icontent, iwriter)
+		values (seq_inquiry.nextval, #{ititle}, #{icontent}, #{iwriter})
+	</insert>
+
+	<insert id="insertSelectKey">
+		<selectKey keyProperty="ibno" order="BEFORE"
+			resultType="int">
+			select seq_inquiry.nextval from dual
+		</selectKey>
+		insert into tbl_inquiry (ibno, ititle, icontent, iwriter, ref, lev)
+		values (#{ibno},
+		#{ititle}, #{icontent}, #{iwriter}, #{ibno}, 0)
+	</insert>
+
+	<select id="read" resultType="kr.icia.domain.InquiryVO">
+		select * from tbl_inquiry where ibno =
+		#{ibno}
+	</select>
+
+	<delete id="delete">
+		delete from tbl_inquiry where ibno = #{ibno}
+	</delete>
+	
+	<!-- 문의글 삭제시, 답변글도 같이 삭제하기 위해 ref,lev를 뽑는 쿼리문 -->
+	<select id="selectRef" resultType="kr.icia.domain.InquiryVO">
+		select ref,lev from tbl_inquiry where ibno = #{ibno}
+	</select>
+	
+	<!-- 문의글 삭제시, lev값이 0이라면(답변글이 아닌경우) 해당글의 모든 답변글도 삭제 -->
+	<delete id="deleteReply">
+		delete from tbl_inquiry where ref= #{ref}
+	</delete>
+
+	<update id="update">
+		update tbl_inquiry set
+		ititle= #{ititle},
+		icontent=
+		#{icontent},
+		iwriter= #{iwriter},
+		iupdateDate = sysdate
+		where ibno = #{ibno}
+	</update>
+
+
+	<sql id="criteria">
+		<trim prefix="(" suffix=") AND " prefixOverrides="OR">
+			<foreach item='type' collection="typeArr">
+				<trim prefix="OR">
+					<choose>
+						<when test="type == 'W'.toString()">
+							ref in (select ref from tbl_inquiry where iwriter like(#{keyword})) or iwriter like '%'||#{keyword}||'%'
+						</when>
+					</choose>
+				</trim>
+			</foreach>
+		</trim>
+	</sql>
+
+<select id="getListWithPaging"
+		resultType="kr.icia.domain.InquiryVO">
+	
+	select ibno, ititle, icontent, iwriter, iregdate, iupdatedate 
+	from (select tbl_inquiry.*, row_number() over(order by ref desc,lev asc) as rnum from tbl_inquiry) where  
+	
+	<include refid="criteria"></include>
+	 rnum between (#{pageNum} - 1) * (#{amount} +1) and #{pageNum} * #{amount}
+	
+	</select>
+
+	<select id="getTotalCount" resultType="int">
+		select count(*) from
+		tbl_inquiry where 
+		
+		<include refid="criteria"></include>
+		
+		ibno > 0
+	</select>
+	
+
+		
+	
+	<update id="updateReplyCnt">
+		update tbl_inquiry set replycnt = replycnt + #{amount} where ibno = #{ibno}
+	</update>
+	
+	<insert id="reply">
+	<selectKey keyProperty="ibno" order="BEFORE"
+			resultType="int">
+			select seq_inquiry.nextval from dual
+		</selectKey>
+		insert into tbl_inquiry (ibno, ititle, icontent, iwriter, ref, lev)
+		values (#{ibno},
+		#{ititle}, #{icontent}, #{iwriter}, #{ref}, 1)
+	</insert>
+
+<select id="getMyListWithPaging"
+		resultType="kr.icia.domain.InquiryVO">
+		select * from tbl_inquiry where ref in (select ref from tbl_inquiry where iwriter = #{keyword}) order by ref desc, lev asc
+		</select>
+
+</mapper>

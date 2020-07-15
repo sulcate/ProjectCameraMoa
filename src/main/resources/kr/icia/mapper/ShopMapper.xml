@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+<mapper namespace="kr.icia.mapper.ShopMapper">
+
+	<insert id="addCart">
+		insert into tbl_cart (cartNum, userId, gdsNum, cartStock)
+			values (tbl_cart_seq.nextval, #{userId}, #{gdsNum}, #{cartStock})
+	</insert>
+	
+	<!-- 카트 리스트 -->
+	<select id="cartList" resultType="kr.icia.domain.CartListVO">
+		select
+			row_number() over(order by c.cartNum desc) as num,
+			c.cartNum, c.userId, c.gdsNum, c.cartStock, c.addDate,
+			g.gdsName, g.gdsPrice, g.gdsDes, g.gdsThumbImg
+		from tbl_cart c
+			inner join tbl_goods g
+				on c.gdsNum = g.gdsNum
+			where c.userId = #{userId}
+	</select>
+	
+	<!-- 특정 카트 리스트 -->
+	<select id="getCartList" resultType="kr.icia.domain.CartListVO">
+		select
+			row_number() over(order by c.cartNum desc) as num,
+			c.cartNum, c.userId, c.gdsNum, c.cartStock, c.addDate,
+			g.gdsName, g.gdsPrice, g.gdsDes, g.gdsThumbImg
+		from tbl_cart c
+			inner join tbl_goods g
+				on c.gdsNum = g.gdsNum
+			where c.userId = #{userId} and cartNum=#{cartNum}
+			
+	</select>
+	
+	<!-- 카트 삭제 -->
+	<delete id="deleteCart">
+		delete tbl_cart
+			where cartNum = #{cartNum}
+				and userId = #{userId}
+	</delete>
+	
+	<!-- 카트 수량 수정 -->
+	<update id="updateCart">
+		update tbl_cart
+			set cartStock = #{cartStock}
+				where cartNum = #{cartNum}
+				 and userId = #{userId}
+	</update>
+	
+	<!-- 주문 정보 -->
+	<insert id="orderInfo">
+		insert into tbl_order(orderId, userId, orderRec, postCode, userAddr1, userAddr2, userAddr3, orderPhon, amount)
+			values(#{orderId}, #{userId}, #{orderRec}, #{postCode}, #{userAddr1}, #{userAddr2}, #{userAddr3}, #{orderPhon}, #{amount})
+	</insert>
+	
+	<!-- 주문 상세 정보 -->
+	<insert id="orderInfo_Details">
+		insert into tbl_order_details(orderDetailsNum, orderId, gdsNum, cartStock)
+			select tbl_order_details_seq.nextval, #{orderId}, gdsNum, cartStock
+				from tbl_cart
+	</insert>
+	
+	<!-- 카트 비우기 -->
+	<delete id="cartAllDelete">
+		delete tbl_cart
+			where userId = #{userId}
+	</delete>
+	
+	<!-- 특정 유저의 주문 목록 -->
+	<select id="orderList" resultType="kr.icia.domain.OrderVO">
+		select
+			orderId, userId, orderRec, postCode, userAddr1, userAddr2, userAddr3, orderPhon, amount, orderDate, delivery
+		from tbl_order
+			where userId = #{userId} order by orderDate desc
+	</select>
+	
+	<!-- 특정 주문 목록 -->
+	<select id="orderView" resultType="kr.icia.domain.OrderListVO">
+		select
+			o.orderId, o.userId, o.orderRec, o.postCode, o.userAddr1, o.userAddr2, o.userAddr3, o.orderPhon, o.amount, o.orderDate, o.delivery,
+			d.orderDetailsNum, d.gdsNum, d.cartStock,
+			g.gdsName, g.gdsThumbImg, g.gdsPrice
+		from tbl_order o
+			inner join tbl_order_details d
+				on o.orderId = d.orderId
+			inner join tbl_goods g
+				on d.gdsNum = g.gdsNum
+			where o.userId = #{userId}
+				and o.orderId = #{orderId}
+	</select>
+	
+	<!-- 주문 정보 수정 -->
+	<update id="orderModify">
+		update tbl_order
+			set orderRec = #{orderRec}, postCode = #{postCode}, userAddr1 = #{userAddr1}, userAddr2 = #{userAddr2}, userAddr3 = #{userAddr3}, orderPhon = #{orderPhon}
+				where orderId = #{orderId}
+	</update>
+	
+	<!-- 주문 환불 -->
+	<insert id="refund">
+		insert into tbl_refund_details(refundDetailsNum, orderId, gdsNum, refundStock)
+			values(tbl_refund_details_seq.nextval, #{orderId}, #{gdsNum}, #{refundStock})
+	</insert>
+	
+	<!-- 특정 유저의 환불 목록 -->
+	<select id="refundList" resultType="kr.icia.domain.OrderListVO">
+		select
+			distinct o.orderId, o.userId, o.orderRec, o.postCode, o.userAddr1, o.userAddr2, o.userAddr3, o.orderPhon, o.amount, o.orderDate,
+			d.state, d.refundDate
+		from tbl_order o
+			inner join tbl_refund_details d
+				on o.orderId = d.orderId
+			where userId = #{userId} order by d.refundDate desc
+	</select>
+	
+	<!-- 이미 환불 취소된 상품인지 체크 -->
+	<select id="cancelCheck" resultType="kr.icia.domain.OrderListVO">
+		select orderId, state from tbl_refund_details where orderId = #{orderId}
+	</select>
+	
+	<!-- 특정 환불 목록 -->
+	<select id="refundView" resultType="kr.icia.domain.OrderListVO">
+		select
+			o.orderId, o.userId, o.orderRec, o.postCode, o.userAddr1, o.userAddr2, o.userAddr3, o.orderPhon, o.amount,
+			d.refundDetailsNum, d.gdsNum, d.refundStock, d.state, d.refundDate,
+			g.gdsName, g.gdsThumbImg, g.gdsPrice
+		from tbl_order o
+			inner join tbl_refund_details d
+				on o.orderId = d.orderId
+			inner join tbl_goods g
+				on d.gdsNum = g.gdsNum
+			where o.userId = #{userId}
+				and o.orderId = #{orderId}
+	</select>
+	
+	<!-- 카트 담기시 중복 상품 수량 추가 -->
+	<update id="modifyCart">
+		update tbl_cart
+			set cartStock = cartStock + #{cartStock}
+				where gdsNum = #{gdsNum}
+				 and userId = #{userId}
+	</update>
+	
+	<!-- 환불 취소시, 환불 상태 변경 -->
+	<update id="state">
+		update tbl_refund_details
+			set state = #{state}
+				where orderId = #{orderId}
+	</update>
+	
+	<!-- 환불 취소시, db 삭제 -->
+	<delete id="deleteRefund">
+		delete tbl_refund_details
+			where orderId = #{orderId}
+	</delete>
+
+</mapper>

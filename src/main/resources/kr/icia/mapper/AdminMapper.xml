@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+<mapper namespace="kr.icia.mapper.AdminMapper">
+
+	<!-- 카테고리 코드 읽어오기. 글 등록시 등록된 카테코리 코드 읽기용 -->
+	<select id="getCateCode" resultType="kr.icia.domain.GoodsVO">
+		select distinct catecode from tbl_goods order by catecode
+	</select>
+
+	<!-- 상품 목록 -->
+	<select id="getList" resultType="kr.icia.domain.GoodsVO">
+		select * from tbl_goods order by gdsDate desc
+	</select>
+	
+	<!-- 상품 목록 -->
+	<select id="getList1" resultType="kr.icia.domain.GoodsVO">
+		select * from tbl_goods where cateCode = 'SLR 카메라' order by gdsDate desc
+	</select>
+	
+	<!-- 상품 목록 -->
+	<select id="getList2" resultType="kr.icia.domain.GoodsVO">
+		select * from tbl_goods where cateCode = '미러리스 카메라' order by gdsDate desc
+	</select>
+	
+	<!-- 상품 목록 -->
+	<select id="getList3" resultType="kr.icia.domain.GoodsVO">
+		select * from tbl_goods where cateCode = '콤팩트 카메라' order by gdsDate desc
+	</select>
+	
+	<!-- 상품 목록 -->
+	<select id="getList4" resultType="kr.icia.domain.GoodsVO">
+		select * from tbl_goods where cateCode = '렌즈' order by gdsDate desc
+	</select>
+	
+	<!-- 상품 목록 -->
+	<select id="getList5" resultType="kr.icia.domain.GoodsVO">
+		select * from tbl_goods where cateCode = '액세서리' order by gdsDate desc
+	</select>
+	
+	<!-- 상품 조회 -->
+	<select id="read" resultType="kr.icia.domain.GoodsVO">
+		select * from tbl_goods where gdsnum=#{gdsNum}
+	</select>
+	
+	<!-- 상품 삭제 -->
+	<delete id="delete">
+		delete tbl_goods where gdsnum=#{gdsNum}
+	</delete>
+	
+	<!-- 상품 수정 -->
+	<update id="update">
+		update tbl_goods set gdsname=#{gdsName}, catecode=#{cateCode}, gdsprice=#{gdsPrice}, gdsbrand=#{gdsBrand}, gdsstock=#{gdsStock}, gdsdes=#{gdsDes}, gdsImg=#{gdsImg}, gdsThumbImg=#{gdsThumbImg} where gdsnum=#{gdsNum}
+	</update>
+	
+	<!-- 상품 등록 -->
+	<insert id="register">
+		insert into tbl_goods(gdsnum, gdsname, catecode, gdsprice, gdsbrand, gdsstock, gdsdes, gdsimg, gdsthumbimg)
+			values (tbl_goods_seq.nextval, #{gdsName}, #{cateCode}, #{gdsPrice}, #{gdsBrand}, #{gdsStock}, #{gdsDes}, #{gdsImg}, #{gdsThumbImg})
+	</insert>
+	
+	<!-- 모든 유저의 주문 목록 -->
+	<select id="orderList" resultType="kr.icia.domain.OrderVO">
+		select
+			orderId, userId, orderRec,
+			postCode, userAddr1, userAddr2, userAddr3,
+			orderPhon, amount, orderDate, delivery
+		from tbl_order order by orderdate desc
+	</select>
+	
+	<!-- 특정 주문 목록 -->
+	<select id="orderView" resultType="kr.icia.domain.OrderListVO">
+		select
+			o.orderId, o.userId, o.orderRec,
+			o.postCode, o.userAddr1, o.userAddr2, o.userAddr3,
+			o.orderPhon, o.amount, o.orderDate, o.delivery,
+			d.orderDetailsNum, d.gdsNum, d.cartStock,
+			g.gdsName, g.gdsThumbImg, g.gdsPrice
+		from tbl_order o
+			inner join tbl_order_details d
+				on o.orderId = d.orderId
+			inner join tbl_goods g
+				on d.gdsNum = g.gdsNum
+		where o.orderId = #{orderId}
+	</select>
+	
+	<!-- 배송 상태 -->
+	<update id="state">
+		update tbl_refund_details
+			set state = #{state}
+		where orderId = #{orderId}
+	</update>
+	
+	<!-- 상품 배송중 클릭 시 수량 감소 -->
+	<update id="changeStock">
+		update tbl_goods
+			set gdsStock = gdsStock - #{gdsStock}
+		where gdsNum = #{gdsNum}
+	</update>
+	
+	<!-- 베스트 gdsN 뽑기 -->
+	<select id="bestGdsN" resultType="kr.icia.domain.GoodsVO">
+		<![CDATA[
+		select gdsnum from (select gdsNum from tbl_order_details group by gdsnum order by count(gdsnum) desc) where rownum <= 4
+		]]>
+	</select>
+	
+	<!-- 베스트상품 가져오기 -->
+	<select id="getbest" resultType="kr.icia.domain.GoodsVO">
+		select * from tbl_goods where gdsNum=#{gdsNum}
+	</select>
+	
+	<!-- 모든 유저의 환불 목록 -->
+	<select id="refundList" resultType="kr.icia.domain.OrderListVO">
+		select
+			distinct o.orderId, o.userId, o.orderRec, o.postCode, o.userAddr1, o.userAddr2, o.userAddr3, o.orderPhon, o.amount, o.orderDate,
+			d.state, d.refundDate
+		from tbl_order o
+			inner join tbl_refund_details d
+				on o.orderId = d.orderId
+			order by d.refundDate desc
+	</select>
+	
+	<!-- 특정 환불 목록 -->
+	<select id="refundView" resultType="kr.icia.domain.OrderListVO">
+		select
+			o.orderId, o.userId, o.orderRec,
+			o.postCode, o.userAddr1, o.userAddr2, o.userAddr3,
+			o.orderPhon, o.amount, o.orderDate, o.delivery,
+			d.refundDetailsNum, d.gdsNum, d.refundStock, d.state, d.refundDate,
+			g.gdsName, g.gdsThumbImg, g.gdsPrice
+		from tbl_order o
+			inner join tbl_refund_details d
+				on o.orderId = d.orderId
+			inner join tbl_goods g
+				on d.gdsNum = g.gdsNum
+		where o.orderId = #{orderId}
+	</select>
+	
+	<!-- 상품 환불 완료 클릭 시 수량 증가 -->
+	<update id="changeStock2">
+		update tbl_goods
+			set gdsStock = gdsStock + #{gdsStock}
+		where gdsNum = #{gdsNum}
+	</update>
+	
+	<!-- 유저 목록 -->
+	<select id="userList" resultType="kr.icia.domain.MemberVO">
+		select
+			o.userid, o.userpw, o.userName,
+			o.userEmail, o.userPhone, o.userZipCode, o.userFirAddr,
+			o.userSecAddr, o.UserAddrDetail,
+			d.auth
+		from tbl_user o
+			inner join tbl_user_auth d
+				on o.userid = d.userid
+	</select>
+	
+	<!-- 유저 목록 권한 변경 -->
+	<update id="userAuth">
+		update tbl_user_auth set auth = #{auth} where userid = #{userid}
+	</update>
+	
+	<!-- 주문 상태 변경 -->
+	<update id="delivery">
+		update tbl_order set delivery = #{delivery} where orderId = #{orderId}
+	</update>
+	
+</mapper>

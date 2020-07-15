@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper 
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.icia.mapper.MemberMapper">
+
+
+	<!-- resultType : 자동으로 설정된 리턴 타입. resultMap : 수동으로 설정된 리턴 타입. -->
+	<resultMap type="kr.icia.domain.MemberVO" id="memberMap">
+		<id property="userid" column="userid" />
+		<result property="userid" column="userid" />
+		<result property="userpw" column="userpw" />
+		<result property="userName" column="username" />
+		<result property="userEmail" column="useremail" />
+		<result property="userPhone" column="userphone" />
+		<result property="userZipCode" column="userzipcode" />
+		<result property="userFirAddr" column="userfiraddr" />
+		<result property="userSecAddr" column="usersecaddr" />
+		<result property="userAddrDetail" column="useraddrdetail" />
+		<collection property="authList" resultMap="authMap" />
+	</resultMap>
+
+	<resultMap type="kr.icia.domain.AuthVO" id="authMap">
+		<result property="userid" column="userid" />
+		<result property="auth" column="auth" />
+	</resultMap>
+
+	<!-- 로그인처리 -->
+	<select id="read" resultMap="memberMap">
+		select
+		u.userid, userpw,
+		userName,userEmail,
+		userPhone, userzipcode, userfiraddr, usersecaddr,
+		userAddrDetail, a.auth
+		from
+		tbl_user u left outer join
+		tbl_user_auth a on
+		u.userid=a.userid
+		where u.userid=
+		#{userid}
+	</select>
+	<!-- left outer join : 좌 테이블, 우 테이블 이 있을때, 좌 테이블을 기준으로 레코드 추출. 좌 테이블은 모두 
+		추출, 우 테이블은 일치하는 값들 추출. 로그인 창에서 입력한 사용자 계정을 넘겨 받아서 일치하는 데이터 검색. -->
+
+	<!-- 회원가입 -->
+	<insert id="insert">
+		insert into tbl_user (userid, userpw, userName,
+		userEmail,
+		userPhone, userzipcode, userfiraddr, usersecaddr,
+		userAddrDetail)
+		values
+		(#{userid},#{userpw},#{userName},#{userEmail},#{userPhone},#{userZipCode},#{userFirAddr},#{userSecAddr},#{userAddrDetail})
+	</insert>
+
+	<insert id="insertAuth">
+		insert into tbl_user_auth (userid, auth) values
+		(#{userid},'ROLE_USER')
+	</insert>
+
+	<!-- 회원탈퇴 -->
+	<delete id="deleteAuth">
+		delete from tbl_user_auth where userid=#{userid}
+	</delete>
+	<delete id='deleteUser'>
+		delete from tbl_user where userid=#{userid}
+	</delete>
+
+	<!-- 아이디중복체크 -->
+	<select id="idCheck" resultType="int">
+		select count(*) from tbl_user
+		where userid = #{userid}
+	</select>
+
+	<!-- 이메일중복체크 -->
+	<select id="emCheck" resultType="int">
+		select count(*) from tbl_user
+		where useremail = #{userEmail}
+	</select>
+
+	<!-- 아이디 찾기 -->
+	<select id="findUseridResult" parameterType="String"
+		resultType="String">
+		select userid from
+		tbl_user
+		where
+		userName=#{userName} and
+		userEmail=#{userEmail}
+	</select>
+
+	<select id="findUseridCheck" resultType="int">
+		select count(*) from
+		tbl_user where userName=#{userName} and
+		userEmail=#{userEmail}
+	</select>
+
+	<!-- 비밀번호 변경 -->
+	<select id="findUserpwCheck" resultType="int">
+		select count(*) from
+		tbl_user
+		where userid=#{userid} and
+		userEmail=#{userEmail}
+	</select>
+
+
+	<update id="setUserpw">
+		update tbl_user set
+		userpw=#{userpw} where
+		userid=#{userid} and userEmail=#{userEmail}
+	</update>
+
+	<!-- 회원정보 조회 -->
+	<select id="get" resultType="kr.icia.domain.MemberVO">
+		select * from
+		tbl_user where
+		userid=#{userid}
+	</select>
+
+	<!-- 회원정보 변경 -->
+	<update id="updateUser">
+		update tbl_user set userpw=#{userpw},
+		userName=#{userName},
+		userEmail=#{userEmail},userPhone=#{userPhone},
+		userZipCode=#{userZipCode},userFirAddr=#{userFirAddr},
+		userSecAddr=#{userSecAddr},
+		UserAddrDetail=#{UserAddrDetail}
+		where
+		userid=#{userid}
+	</update>
+
+	<!-- 탈퇴시 비밀번호 확인 -->
+	<select id="getPw" resultType="String">
+		select userpw from tbl_user where
+		userid=#{userid}
+	</select>
+
+
+
+</mapper>

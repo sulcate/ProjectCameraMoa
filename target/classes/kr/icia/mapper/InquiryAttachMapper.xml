@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.icia.mapper.InquiryAttachMapper">
+
+<insert id="insert">
+insert into tbl_inquiry_attach (uuid, uploadpath, filename, filetype, ibno) 
+values (#{uuid}, #{uploadPath}, #{fileName}, #{fileType}, #{ibno})
+</insert>
+
+<delete id="delete">
+delete from tbl_inquiry_attach where uuid=#{uuid}
+</delete>
+
+<select id="findByIbno" resultType="kr.icia.domain.InquiryAttachVO">
+select * from tbl_inquiry_attach where ibno=#{ibno}
+</select>
+
+<delete id="deleteAll">
+delete tbl_inquiry_attach where ibno = #{ibno}
+</delete>
+
+</mapper>
